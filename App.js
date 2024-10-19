@@ -7,7 +7,7 @@ import Signup from './screens/Signup';
 import Welcome from './screens/Welcome';
 
 export default function App() {
-  return <Welcome/>;
+  return <Login/>;
 }
 
 const styles = StyleSheet.create({
