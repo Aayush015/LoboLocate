@@ -34,74 +34,79 @@ import { View } from 'react-native';
 // Colors required
 const { brand, darkLight, primary } = colors;
 
+// Keyboard avoiding view
+import KeyboardAvoidingWrapper from '../components/KeyboardAvoidingWrapper';
+
 const Login = () => {
   const [hidePassword, setHidePassword] = useState(true);
   return (
-    <StyledContainer>
-      <StatusBar style="dark" />
-      <InnerContainer>
-        <PageLogo
-          resizeMode="contain"
-          source={require('../assets/img/logo.jpeg')}
-        />
-        <PageTitle>LoboLocate</PageTitle>
-        <SubTitle>Account Login</SubTitle>
+    <KeyboardAvoidingWrapper>
+      <StyledContainer>
+        <StatusBar style="dark" />
+        <InnerContainer>
+          <PageLogo
+            resizeMode="contain"
+            source={require('../assets/img/logo.jpeg')}
+          />
+          <PageTitle>LoboLocate</PageTitle>
+          <SubTitle>Account Login</SubTitle>
 
-        <Formik
-          initialValues={{ email: '', password: '' }}
-          onSubmit={(values) => {
-            console.log(values);
-          }}
-        >
-          {({ handleChange, handleBlur, handleSubmit, values }) => (
-            <StyledFormArea>
-              <MyTextInput
-                label="Email Address"
-                icon="mail"
-                placeholder="asdf123@gmail.com"
-                placeholderTextColor={darkLight}
-                onChangeText={handleChange('email')}
-                onBlur={handleBlur('email')}
-                value={values.email}
-                keyboardType="email-address"
-              />
+          <Formik
+            initialValues={{ email: '', password: '' }}
+            onSubmit={(values) => {
+              console.log(values);
+            }}
+          >
+            {({ handleChange, handleBlur, handleSubmit, values }) => (
+              <StyledFormArea>
+                <MyTextInput
+                  label="Email Address"
+                  icon="mail"
+                  placeholder="asdf123@gmail.com"
+                  placeholderTextColor={darkLight}
+                  onChangeText={handleChange('email')}
+                  onBlur={handleBlur('email')}
+                  value={values.email}
+                  keyboardType="email-address"
+                />
 
-              <MyTextInput
-                label="Password"
-                icon="lock"
-                placeholder="* * * * * * * * *"
-                placeholderTextColor={darkLight}
-                onChangeText={handleChange('password')}
-                onBlur={handleBlur('password')}
-                value={values.password}
-                secureTextEntry={hidePassword}
-                isPassword={true}
-                hidePassword={hidePassword}
-                setHidePassword={setHidePassword}
-              />
+                <MyTextInput
+                  label="Password"
+                  icon="lock"
+                  placeholder="* * * * * * * * *"
+                  placeholderTextColor={darkLight}
+                  onChangeText={handleChange('password')}
+                  onBlur={handleBlur('password')}
+                  value={values.password}
+                  secureTextEntry={hidePassword}
+                  isPassword={true}
+                  hidePassword={hidePassword}
+                  setHidePassword={setHidePassword}
+                />
 
-              <MsgBox>.</MsgBox>
-              <StyledButton onPress={handleSubmit}>
-                <ButtonText>Login</ButtonText>
-              </StyledButton>
-              <Line />
+                <MsgBox>.</MsgBox>
+                <StyledButton onPress={handleSubmit}>
+                  <ButtonText>Login</ButtonText>
+                </StyledButton>
+                <Line />
 
-              <StyledButton microsoft={true} onPress={handleSubmit}>
-                <Fontisto name="microsoft" color={primary} size={24} />
-                <ButtonText microsoft={true}>Sign in with UNM Email</ButtonText>
-              </StyledButton>
+                <StyledButton microsoft={true} onPress={handleSubmit}>
+                  <Fontisto name="microsoft" color={primary} size={24} />
+                  <ButtonText microsoft={true}>Sign in with UNM Email</ButtonText>
+                </StyledButton>
 
-              <ExtraView>
-                <ExtraText>Don't have an account already? </ExtraText>
-                <TextLink>
-                  <TextLinkContent>Sign Up</TextLinkContent>
-                </TextLink>
-              </ExtraView>
-            </StyledFormArea>
-          )}
-        </Formik>
-      </InnerContainer>
-    </StyledContainer>
+                <ExtraView>
+                  <ExtraText>Don't have an account already? </ExtraText>
+                  <TextLink>
+                    <TextLinkContent>Sign Up</TextLinkContent>
+                  </TextLink>
+                </ExtraView>
+              </StyledFormArea>
+            )}
+          </Formik>
+        </InnerContainer>
+      </StyledContainer>
+    </KeyboardAvoidingWrapper>
   );
 };
 
