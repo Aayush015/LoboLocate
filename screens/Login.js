@@ -37,7 +37,7 @@ const { brand, darkLight, primary } = colors;
 // Keyboard avoiding view
 import KeyboardAvoidingWrapper from '../components/KeyboardAvoidingWrapper';
 
-const Login = () => {
+const Login = ({navigation}) => {
   const [hidePassword, setHidePassword] = useState(true);
   return (
     <KeyboardAvoidingWrapper>
@@ -54,7 +54,7 @@ const Login = () => {
           <Formik
             initialValues={{ email: '', password: '' }}
             onSubmit={(values) => {
-              console.log(values);
+              navigation.navigate("Welcome");
             }}
           >
             {({ handleChange, handleBlur, handleSubmit, values }) => (
@@ -97,7 +97,7 @@ const Login = () => {
 
                 <ExtraView>
                   <ExtraText>Don't have an account already? </ExtraText>
-                  <TextLink>
+                  <TextLink onPress={() => navigation.navigate("Signup")}>
                     <TextLinkContent>Sign Up</TextLinkContent>
                   </TextLink>
                 </ExtraView>
