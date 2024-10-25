@@ -3,6 +3,8 @@
 # dependencies
 node_modules/
 
+login_server
+
 # Expo
 .expo/
 dist/

@@ -29,7 +29,7 @@ import {
   TextLink,
   TextLinkContent,
 } from '../components/styles';
-import { View } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 
 // Colors required
 const { brand, darkLight, primary } = colors;
@@ -37,8 +37,43 @@ const { brand, darkLight, primary } = colors;
 // Keyboard avoiding view
 import KeyboardAvoidingWrapper from '../components/KeyboardAvoidingWrapper';
 
+// Axios API client
+import axios from 'axios';
+
 const Login = ({navigation}) => {
   const [hidePassword, setHidePassword] = useState(true);
+  const [message, setMessage] = useState();
+  const [messageType, setMessageType] = useState();
+
+  const handleLogin = (credentials, setSubmitting) => {
+    handleMessage(null);
+    const url = 'https://intense-earth-59719-22401d6fbb13.herokuapp.com/user/signin';
+
+    axios
+      .post(url, credentials)
+      .then((response) => {
+        const result = response.data; 
+        const {message, status, data} = result; 
+
+        if (status !== 'SUCCESS') {
+          handleMessage(message, status);
+        } else {
+          navigation.navigate('Welcome', {...data[0]});
+        }
+        setSubmitting(false);
+      })
+      .catch(error => {
+        console.log(error.JSON());
+        setSubmitting(false);
+        handleMessage("An error occurred. Please check your internet connection and try again");
+    })
+  }
+
+  const handleMessage = (message, type = 'FAILED') => {
+    setMessage(message);
+    setMessageType(type);
+  }
+
   return (
     <KeyboardAvoidingWrapper>
       <StyledContainer>
@@ -46,18 +81,23 @@ const Login = ({navigation}) => {
         <InnerContainer>
           <PageLogo
             resizeMode="contain"
-            source={require('../assets/img/logo.jpeg')}
+            source={require('../assets/img/lobo_locate.png')}
           />
           <PageTitle>LoboLocate</PageTitle>
           <SubTitle>Account Login</SubTitle>
 
           <Formik
             initialValues={{ email: '', password: '' }}
-            onSubmit={(values) => {
-              navigation.navigate("Welcome");
+            onSubmit={(values, {setSubmitting}) => {
+              if (values.email == '' || values.password == '') {
+                handleMessage("Please fill in all fields");
+                setSubmitting(false);
+              } else {
+                handleLogin(values, setSubmitting);
+              }
             }}
           >
-            {({ handleChange, handleBlur, handleSubmit, values }) => (
+            {({ handleChange, handleBlur, handleSubmit, values, isSubmitting }) => (
               <StyledFormArea>
                 <MyTextInput
                   label="Email Address"
@@ -84,12 +124,20 @@ const Login = ({navigation}) => {
                   setHidePassword={setHidePassword}
                 />
 
-                <MsgBox>.</MsgBox>
-                <StyledButton onPress={handleSubmit}>
-                  <ButtonText>Login</ButtonText>
-                </StyledButton>
-                <Line />
+                <MsgBox type={messageType}>{message}</MsgBox>
+                {!isSubmitting && (
+                  <StyledButton onPress={handleSubmit}>
+                    <ButtonText>Login</ButtonText>
+                  </StyledButton>
+                )}
 
+                {isSubmitting && (
+                  <StyledButton disabled={true}>
+                    <ActivityIndicator size="large" color={primary} />
+                  </StyledButton>
+                )}
+
+                <Line />
                 <StyledButton microsoft={true} onPress={handleSubmit}>
                   <Fontisto name="microsoft" color={primary} size={24} />
                   <ButtonText microsoft={true}>Sign in with UNM Email</ButtonText>
