@@ -14,7 +14,8 @@ import {
   Avatar,
 } from '../components/styles';
 
-const Welcome = ({navigation}) => {
+const Welcome = ({navigation, route}) => {
+    const {name, email} = route.params;
     return (
         <>
         <StatusBar style="dark" />
@@ -22,8 +23,8 @@ const Welcome = ({navigation}) => {
             <WelcomeImage resizeMode="contain"source={require('../assets/img/things.jpeg')}/>
             <WelcomeContainer>
                 <PageTitle welcome={true}>Welcome to LoboLocate</PageTitle>
-                <SubTitle>Hi Aayush!</SubTitle>
-                <SubTitle>akafle1@unm.edu</SubTitle>
+                <SubTitle>Hi, {name || 'student'}</SubTitle>
+                <SubTitle>{email || ''}</SubTitle>
                 <StyledFormArea>
                     <Avatar resizeMode="contain"source={require('../assets/img/logo.jpeg')}/>
                     <Line />
