@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import { StatusBar } from 'expo-status-bar';
+import {FontAwesome} from '@expo/vector-icons';
 
 import {
   InnerContainer,
@@ -12,28 +13,57 @@ import {
   WelcomeContainer,
   WelcomeImage,
   Avatar,
+  PlusIconContainer, 
+  ActionButton,
+  ReportButtonsContainer,
+  FixedBottomContainer,
 } from '../components/styles';
 
 const Welcome = ({navigation, route}) => {
     const {name, email} = route.params;
+    const [showReportButtons, setShowReportButtons] = useState(false);
+
+    const toggleReportButtons = () => {
+        setShowReportButtons(!showReportButtons);
+    };
+
     return (
         <>
         <StatusBar style="dark" />
         <InnerContainer>
-            <WelcomeImage resizeMode="contain"source={require('../assets/img/things.jpeg')}/>
-            <WelcomeContainer>
-                <PageTitle welcome={true}>Welcome to LoboLocate</PageTitle>
-                <SubTitle>Hi, {name || 'student'}</SubTitle>
-                <SubTitle>{email || ''}</SubTitle>
-                <StyledFormArea>
-                    <Avatar resizeMode="contain"source={require('../assets/img/logo.jpeg')}/>
+                <WelcomeImage resizeMode="contain" source={require('../assets/img/things.jpeg')} />
+                <WelcomeContainer>
+                    <PageTitle welcome={true}>Welcome to LoboLocate</PageTitle>
+                    <SubTitle>Hi, {name || 'student'}</SubTitle>
+                    <SubTitle>{email || ''}</SubTitle>
+                    <StyledFormArea>
+                        <Avatar resizeMode="contain" source={require('../assets/img/logo.jpeg')} />
+                        
+                        <PlusIconContainer onPress={toggleReportButtons}>
+                            <FontAwesome name="plus" size={24} color="#fff" />
+                        </PlusIconContainer>
+                        
+                        {showReportButtons && (
+                            <ReportButtonsContainer>
+                                <ActionButton onPress={() => navigation.navigate("ReportLostItem")}>
+                                    <ButtonText>Report Lost Item</ButtonText>
+                                </ActionButton>
+                                <ActionButton onPress={() => navigation.navigate("ReportFoundItem")}>
+                                    <ButtonText>Report Found Item</ButtonText>
+                                </ActionButton>
+                            </ReportButtonsContainer>
+                        )}
+                        
+                    </StyledFormArea>
+                </WelcomeContainer>
+                
+                <FixedBottomContainer>
                     <Line />
-                    <StyledButton onPress={() => {navigation.navigate("Login")}}>
+                    <StyledButton onPress={() => { navigation.navigate("Login") }}>
                         <ButtonText>Logout</ButtonText>
                     </StyledButton>
-                </StyledFormArea>
-            </WelcomeContainer>
-        </InnerContainer>
+                </FixedBottomContainer>
+            </InnerContainer>
         </>
     );
 };

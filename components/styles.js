@@ -53,8 +53,21 @@ export const Avatar = styled.Image`
 `;
 
 export const WelcomeImage = styled.Image`
-    height: 50%;
+    height: 30%;
     min-width: 100%;
+`;
+
+export const PlusIconContainer = styled.TouchableOpacity`
+    position: absolute;
+    right: 25px;
+    top: 25px;
+    background-color: ${brand};
+    width: 50px;
+    height: 50px;
+    border-radius: 25px;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
 `;
 
 export const PageTitle = styled.Text`
@@ -134,6 +147,27 @@ export const StyledButton = styled.TouchableOpacity`
         justify-content: center;
         border-radius: 50px;
     `}
+`;
+
+// Styled Button for Plus Icon
+export const ActionButton = styled(StyledButton)`
+    background-color: ${unmBrand};
+    width: 100%;
+    height: 50px;
+    margin-vertical: 5px;
+`;
+
+export const ReportButtonsContainer = styled.View`
+    width: 100%;
+    align-items: center;
+    margin-bottom: 10px;
+`;
+
+export const FixedBottomContainer = styled.View`
+    position: absolute;
+    bottom: 20px;
+    width: 90%;
+    align-self: center;
 `;
 
 export const ButtonText = styled.Text`
