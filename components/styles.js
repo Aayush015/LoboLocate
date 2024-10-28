@@ -215,3 +215,48 @@ export const TextLinkContent = styled.Text`
     color: ${brand};
     font-size: 15px;
 `;
+
+// Reporting Lost Item 
+export const FormContainer = styled.View`
+    flex: 1;
+    width: 90%;
+    padding: 10px;
+    margin-top: 20px;
+`;
+
+export const QuestionLabel = styled.Text`
+    font-size: 18px;
+    color: ${tertiary};
+    margin-bottom: 10px;
+    font-weight: bold;
+`;
+
+export const MultiChoiceContainer = styled.View`
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+`;
+
+export const ChoiceButton = styled.TouchableOpacity`
+    background-color: ${secondary};
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+`;
+
+export const ChoiceButtonText = styled.Text`
+    font-size: 16px;
+    color: ${tertiary};
+`;
+
+export const StyledTextArea = styled.TextInput`
+    background-color: ${secondary};
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 16px;
+    height: 100px;
+    margin-vertical: 5px;
+    color: ${tertiary};
+    text-align-vertical: top;
+`;

@@ -19,6 +19,9 @@ import {
   FixedBottomContainer,
 } from '../components/styles';
 
+// Report Lost Item Screen
+import ReportLostItem from './ReportLostItem';
+
 const Welcome = ({navigation, route}) => {
     const {name, email} = route.params;
     const [showReportButtons, setShowReportButtons] = useState(false);

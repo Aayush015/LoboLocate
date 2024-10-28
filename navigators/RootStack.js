@@ -11,6 +11,7 @@ const {primary, tertiary} = colors;
 import Login from './../screens/Login';
 import Signup from './../screens/Signup';
 import Welcome from './../screens/Welcome';
+import ReportLostItem from '../screens/ReportLostItem';
 
 const Stack = createStackNavigator();
 
@@ -34,6 +35,7 @@ const RootStack = () => {
                 <Stack.Screen name="Login" component={Login}/>
                 <Stack.Screen name="Signup" component={Signup}/>
                 <Stack.Screen options={{headerTintColor: primary}} name="Welcome" component={Welcome}/>
+                <Stack.Screen name="ReportLostItem" component={ReportLostItem}/>
             </Stack.Navigator>
         </NavigationContainer>
     )
