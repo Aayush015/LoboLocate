@@ -3,6 +3,7 @@ import { ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 import {
     StyledContainer,
@@ -19,9 +20,9 @@ import {
 } from '../components/styles';
 
 const ReportFoundItem = ({ navigation }) => {
-    const [hasCameraPermission, setHasCameraPermission] = useState(null);
+    const [hasCameraPermission, setHasCameraPermission] = useState(false);
+    const [hasLibraryPermission, setHasLibraryPermission] = useState(false);
     const [image, setImage] = useState(null);
-    const [autoDescription, setAutoDescription] = useState("");
     const [itemType, setItemType] = useState(null);
     const [locations, setLocations] = useState(["", "", "", ""]);
     const [distinguishingFeatures, setDistinguishingFeatures] = useState("");
@@ -30,20 +31,22 @@ const ReportFoundItem = ({ navigation }) => {
 
     const itemTypes = ["Electronics", "Food", "Personal Item", "Clothing", "Accessory", "Others"];
 
-    // Request camera permissions on load
     useEffect(() => {
         const checkPermissions = async () => {
-            const { status } = await Camera.getCameraPermissionsAsync();
-            if (status !== 'granted') {
-                const { status: newStatus } = await Camera.requestCameraPermissionsAsync();
-                setHasCameraPermission(newStatus === 'granted');
-                if (newStatus !== 'granted') {
-                    Alert.alert("Permission Denied", "Camera access is needed to take a picture of the found item.");
-                }
-            } else {
-                setHasCameraPermission(true);
+            const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
+            const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            setHasCameraPermission(cameraStatus === 'granted');
+            setHasLibraryPermission(libraryStatus === 'granted');
+
+            if (cameraStatus !== 'granted') {
+                Alert.alert("Permission Denied", "Camera access is needed to take a picture of the found item.");
+            }
+            if (libraryStatus !== 'granted') {
+                Alert.alert("Permission Denied", "Gallery access is needed to select an image.");
             }
         };
+
         checkPermissions();
     }, []);
 
@@ -59,44 +62,124 @@ const ReportFoundItem = ({ navigation }) => {
             aspect: [4, 3],
             quality: 1,
         });
-        
-        if (!result.cancelled) {
-            setImage(result.uri);
-            generateDescription(result.uri);
+
+        if (!result.canceled && result.assets && result.assets[0] && result.assets[0].uri) {
+            setImage(result.assets[0].uri);
+            generateDescription(result.assets[0].uri);
+        } else {
+            Alert.alert("Error", "Failed to take a picture. Please try again.");
+            console.error("Camera result error:", result);
+        }
+    };
+
+    const pickImage = async () => {
+        if (!hasLibraryPermission) {
+            Alert.alert("Gallery access needed", "Please enable gallery access in your device settings.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 1,
+        });
+
+        if (!result.canceled && result.assets && result.assets[0] && result.assets[0].uri) {
+            setImage(result.assets[0].uri);
+            generateDescription(result.assets[0].uri);
+        } else {
+            Alert.alert("Error", "Failed to pick an image. Please try again.");
+            console.error("Image picker result error:", result);
         }
     };
 
     const generateDescription = async (imageUri) => {
         setIsGenerating(true);
-        try {
-            const formData = new FormData();
-            formData.append('image', {
-                uri: imageUri,
-                name: 'found_item.jpg',
-                type: 'image/jpeg',
-            });
-
-            const response = await fetch("https://your-backend-endpoint.com/generate-description", {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-                body: formData,
-            });
-
-            const data = await response.json();
+        if (!imageUri) {
+            console.error("No image URI provided to generate description.");
+            Alert.alert("Error", "No image URI found. Please try again.");
             setIsGenerating(false);
-
-            if (data.description) {
-                setAutoDescription(data.description);
+            return;
+        }
+    
+        try {
+            const base64Image = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
+            const visionResponse = await fetch(
+                `https://vision.googleapis.com/v1/images:annotate?key=AIzaSyCtRHU9YzETXXvqI9uoBTQPQX8yJB3FuoY`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requests: [
+                            {
+                                image: { content: base64Image },
+                                features: [
+                                    { type: 'LABEL_DETECTION', maxResults: 5 },
+                                    { type: 'TEXT_DETECTION', maxResults: 15 }
+                                ]
+                            }
+                        ]
+                    })
+                }
+            );
+    
+            if (!visionResponse.ok) {
+                const errorText = await visionResponse.text();
+                console.error("Google Vision API error response:", errorText);
+                Alert.alert("Error", "Could not generate description due to Vision API error. Please fill it manually.");
+                setIsGenerating(false);
+                return;
+            }
+    
+            const visionData = await visionResponse.json();
+            setIsGenerating(false);
+    
+            if (visionData.responses && visionData.responses[0]) {
+                const labels = visionData.responses[0].labelAnnotations || [];
+                const detectedTexts = visionData.responses[0].textAnnotations || [];
+    
+                // Extract main label and map to item type
+                if (labels.length > 0) {
+                    const mainLabel = labels[0].description.toLowerCase();
+    
+                    if (mainLabel.includes("electronics")) setItemType("Electronics");
+                    else if (mainLabel.includes("food")) setItemType("Food");
+                    else if (mainLabel.includes("clothing") || mainLabel.includes("apparel")) setItemType("Clothing");
+                    else if (mainLabel.includes("accessory")) setItemType("Accessory");
+                    else if (mainLabel.includes("personal")) setItemType("Personal Item");
+                    else setItemType("Others");
+    
+                    // Populate distinguishing features with unique labels (up to 5, short form)
+                    const distinguishingFeaturesText = labels.slice(0, 5).map(label => label.description).join(', ');
+                    setDistinguishingFeatures(distinguishingFeaturesText);
+    
+                    // Generate a unique long description with full text annotations
+                    let longDescriptionText = "";
+                    if (detectedTexts.length > 0) {
+                        // Limit to 15-20 words from the detailed description
+                        longDescriptionText = detectedTexts[0].description.split(" ").slice(0, 20).join(" ");
+                    } 
+                    
+                    // Fallback to label descriptions if text annotations are minimal
+                    if (!longDescriptionText || longDescriptionText.split(" ").length < 10) {
+                        longDescriptionText = labels.map(label => label.description).join(", ");
+                    }
+                    
+                    setLongDescription(longDescriptionText);
+                } else {
+                    Alert.alert("Error", "No descriptive labels were found. Please fill manually.");
+                }
             } else {
-                Alert.alert("Error", "Could not generate description. Please fill it manually.");
+                Alert.alert("Error", "No responses from Vision API. Please fill manually.");
             }
         } catch (error) {
             setIsGenerating(false);
-            Alert.alert("Error", "Failed to generate description. Please fill it manually.");
+            console.error("Failed to generate description:", error.message);
+            Alert.alert("Error", "Failed to connect to Vision API. Please check your internet connection and API key.");
         }
     };
+    
+    
 
     const handleSelectItemType = (type) => {
         setItemType(type);
@@ -114,7 +197,7 @@ const ReportFoundItem = ({ navigation }) => {
             itemType,
             locations,
             distinguishingFeatures,
-            longDescription: longDescription || autoDescription,
+            longDescription,
         });
     };
 
@@ -123,24 +206,12 @@ const ReportFoundItem = ({ navigation }) => {
             <StatusBar style="dark" />
             <ScrollView>
                 <FormContainer>
-                    {image ? (
-                        <>
-                            <QuestionLabel>Auto-Generated Description</QuestionLabel>
-                            {isGenerating ? (
-                                <ActivityIndicator size="large" color={colors.brand} />
-                            ) : (
-                                <StyledTextArea
-                                    value={autoDescription}
-                                    onChangeText={setLongDescription}
-                                    multiline={true}
-                                />
-                            )}
-                        </>
-                    ) : (
-                        <StyledButton onPress={openCamera}>
-                            <ButtonText>Take Picture of Found Item</ButtonText>
-                        </StyledButton>
-                    )}
+                    <StyledButton onPress={openCamera}>
+                        <ButtonText>Take Picture of Found Item</ButtonText>
+                    </StyledButton>
+                    <StyledButton onPress={pickImage}>
+                        <ButtonText>Choose Image of Found Item</ButtonText>
+                    </StyledButton>
 
                     <QuestionLabel>Item Type</QuestionLabel>
                     <MultiChoiceContainer>
@@ -177,7 +248,7 @@ const ReportFoundItem = ({ navigation }) => {
                     <QuestionLabel>Long Description (Optional)</QuestionLabel>
                     <StyledTextArea
                         placeholder="Provide additional details if necessary"
-                        value={longDescription || autoDescription}
+                        value={longDescription}
                         onChangeText={setLongDescription}
                         multiline={true}
                     />

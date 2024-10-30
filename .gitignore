@@ -3,7 +3,11 @@
 # dependencies
 node_modules/
 
+# server of managing login and register users
 login_server
+
+# AI model for generating description based on the image
+image_description_backend
 
 # Expo
 .expo/
