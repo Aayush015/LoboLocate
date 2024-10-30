@@ -12,6 +12,7 @@ import Login from './../screens/Login';
 import Signup from './../screens/Signup';
 import Welcome from './../screens/Welcome';
 import ReportLostItem from '../screens/ReportLostItem';
+import ReportfoundItem from '../screens/ReportFoundItem';
 
 const Stack = createStackNavigator();
 
@@ -36,6 +37,7 @@ const RootStack = () => {
                 <Stack.Screen name="Signup" component={Signup}/>
                 <Stack.Screen options={{headerTintColor: primary}} name="Welcome" component={Welcome}/>
                 <Stack.Screen name="ReportLostItem" component={ReportLostItem}/>
+                <Stack.Screen name="ReportFoundItem" component={ReportfoundItem}/>
             </Stack.Navigator>
         </NavigationContainer>
     )
