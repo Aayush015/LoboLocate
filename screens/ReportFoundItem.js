@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { Picker } from '@react-native-picker/picker';
 
 import {
     StyledContainer,
@@ -19,17 +20,32 @@ import {
     colors,
 } from '../components/styles';
 
-const ReportFoundItem = ({ navigation }) => {
+const ReportLostItem = ({ navigation }) => {
     const [hasCameraPermission, setHasCameraPermission] = useState(false);
     const [hasLibraryPermission, setHasLibraryPermission] = useState(false);
     const [image, setImage] = useState(null);
     const [itemType, setItemType] = useState(null);
-    const [locations, setLocations] = useState(["", "", "", ""]);
+    const [dateLost, setDateLost] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [locationKnown, setLocationKnown] = useState(null);
+    const [locations, setLocations] = useState(["", "", ""]);
+    const [knownLocation, setKnownLocation] = useState("");
     const [distinguishingFeatures, setDistinguishingFeatures] = useState("");
     const [longDescription, setLongDescription] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
 
-    const itemTypes = ["Electronics", "Food", "Personal Item", "Clothing", "Accessory", "Others"];
+    const itemTypes = ["Electronics", "Clothing", "Accessories", "Personal Items", "Household Items", "Sports and Outdoor Gear", "Pet Items", "Miscellaneous"];
+
+    const itemCategoryMapping = {
+        "Electronics": ["Smartphones", "Laptops", "Tablets", "Headphones", "Cameras", "Chargers", "Smartwatches", "Console"],
+        "Clothing": ["Jackets", "Shirts", "Pants", "Dresses", "Sweaters", "Hats", "Scarves", "Shoes"],
+        "Accessories": ["Bags", "Sunglasses", "Jewelry", "Belts", "Watches", "Wallets", "Accessories"],
+        "Personal Items": ["Keys", "Wallets", "Eyeglasses", "Phone cases", "Personal hygiene items", "Medication", "Diaries"],
+        "Household Items": ["Kitchen utensils", "Towels", "Bedding", "Decorative items", "Small appliances", "Books", "Candles"],
+        "Sports and Outdoor Gear": ["Bicycles", "Sports balls", "Camping gear", "Fishing equipment", "Skateboards", "Fitness gear", "Water bottles"],
+        "Pet Items": ["Collars and leashes", "Pet toys", "Food and water bowls", "Pet carriers", "Grooming supplies", "Blankets for pets"],
+        "Miscellaneous": ["Umbrellas", "Notebooks", "Toys", "Travel bags", "Art supplies", "Craft items"]
+    };
 
     useEffect(() => {
         const checkPermissions = async () => {
@@ -40,7 +56,7 @@ const ReportFoundItem = ({ navigation }) => {
             setHasLibraryPermission(libraryStatus === 'granted');
 
             if (cameraStatus !== 'granted') {
-                Alert.alert("Permission Denied", "Camera access is needed to take a picture of the found item.");
+                Alert.alert("Permission Denied", "Camera access is needed to take a picture of the item.");
             }
             if (libraryStatus !== 'granted') {
                 Alert.alert("Permission Denied", "Gallery access is needed to select an image.");
@@ -105,8 +121,7 @@ const ReportFoundItem = ({ navigation }) => {
         try {
             const base64Image = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
             const visionResponse = await fetch(
-                `https://vision.googleapis.com/v1/images:annotate?key=AIzaSyCtRHU9YzETXXvqI9uoBTQPQX8yJB3FuoY`,
-                {
+                `https://vision.googleapis.com/v1/images:annotate?key=AIzaSyCtRHU9YzETXXvqI9uoBTQPQX8yJB3FuoY`,                {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -114,7 +129,8 @@ const ReportFoundItem = ({ navigation }) => {
                             {
                                 image: { content: base64Image },
                                 features: [
-                                    { type: 'LABEL_DETECTION', maxResults: 5 },
+                                    { type: 'LABEL_DETECTION', maxResults: 10 },
+                                    { type: 'OBJECT_LOCALIZATION', maxResults: 5 }, 
                                     { type: 'TEXT_DETECTION', maxResults: 15 }
                                 ]
                             }
@@ -136,51 +152,51 @@ const ReportFoundItem = ({ navigation }) => {
     
             if (visionData.responses && visionData.responses[0]) {
                 const labels = visionData.responses[0].labelAnnotations || [];
+                const objects = visionData.responses[0].localizedObjectAnnotations || [];
                 const detectedTexts = visionData.responses[0].textAnnotations || [];
     
-                // Extract main label and map to item type
-                if (labels.length > 0) {
-                    const mainLabel = labels[0].description.toLowerCase();
-    
-                    if (mainLabel.includes("electronics")) setItemType("Electronics");
-                    else if (mainLabel.includes("food")) setItemType("Food");
-                    else if (mainLabel.includes("clothing") || mainLabel.includes("apparel")) setItemType("Clothing");
-                    else if (mainLabel.includes("accessory")) setItemType("Accessory");
-                    else if (mainLabel.includes("personal")) setItemType("Personal Item");
-                    else setItemType("Others");
-    
-                    // Populate distinguishing features with unique labels (up to 5, short form)
-                    const distinguishingFeaturesText = labels.slice(0, 5).map(label => label.description).join(', ');
-                    setDistinguishingFeatures(distinguishingFeaturesText);
-    
-                    // Generate a unique long description with full text annotations
-                    let longDescriptionText = "";
-                    if (detectedTexts.length > 0) {
-                        // Limit to 15-20 words from the detailed description
-                        longDescriptionText = detectedTexts[0].description.split(" ").slice(0, 20).join(" ");
-                    } 
-                    
-                    // Fallback to label descriptions if text annotations are minimal
-                    if (!longDescriptionText || longDescriptionText.split(" ").length < 10) {
-                        longDescriptionText = labels.map(label => label.description).join(", ");
-                    }
-                    
-                    setLongDescription(longDescriptionText);
-                } else {
-                    Alert.alert("Error", "No descriptive labels were found. Please fill manually.");
+                let mainObjectName = "";
+                if (objects.length > 0) {
+                    mainObjectName = objects[0].name.toLowerCase();
                 }
+
+                // Automatically set item type if a relevant label is detected
+                if (labels.length > 0) {
+                    for (const [type, items] of Object.entries(itemCategoryMapping)) {
+                        if (labels.some(label => items.map(item => item.toLowerCase()).includes(label.description.toLowerCase()))) {
+                            setItemType(type);
+                            break;
+                        }
+                    }
+                }
+    
+                const relevantLabels = labels.filter(label =>
+                    mainObjectName ? label.description.toLowerCase().includes(mainObjectName) : true
+                );
+                const distinguishingFeaturesText = relevantLabels.slice(0, 5).map(label => label.description).join(', ');
+                setDistinguishingFeatures(distinguishingFeaturesText.split(' ')[0]); // Ensure only one word for item name
+    
+                let longDescriptionText = "";
+                if (detectedTexts.length > 0) {
+                    longDescriptionText = detectedTexts[0].description.split(" ").slice(0, 15).join(" "); // Limit to 15 words
+                }
+    
+                if (!longDescriptionText || longDescriptionText.split(" ").length < 10) {
+                    longDescriptionText = labels.map(label => label.description).slice(0, 10).join(", ");
+                }
+    
+                setLongDescription(longDescriptionText);
+    
             } else {
-                Alert.alert("Error", "No responses from Vision API. Please fill manually.");
+                Alert.alert("Error", "No descriptive labels were found. Please fill manually.");
             }
         } catch (error) {
             setIsGenerating(false);
             console.error("Failed to generate description:", error.message);
             Alert.alert("Error", "Failed to connect to Vision API. Please check your internet connection and API key.");
         }
-    };
+    };    
     
-    
-
     const handleSelectItemType = (type) => {
         setItemType(type);
     };
@@ -195,59 +211,107 @@ const ReportFoundItem = ({ navigation }) => {
         console.log({
             image,
             itemType,
+            dateLost,
+            locationKnown,
+            knownLocation,
             locations,
             distinguishingFeatures,
             longDescription,
         });
     };
-
     return (
         <StyledContainer>
             <StatusBar style="dark" />
             <ScrollView>
                 <FormContainer>
                     <StyledButton onPress={openCamera}>
-                        <ButtonText>Take Picture of Found Item</ButtonText>
+                        <ButtonText>Take Picture of Lost Item</ButtonText>
                     </StyledButton>
                     <StyledButton onPress={pickImage}>
-                        <ButtonText>Choose Image of Found Item</ButtonText>
+                        <ButtonText>Choose Image of Lost Item</ButtonText>
                     </StyledButton>
 
-                    <QuestionLabel>Item Type</QuestionLabel>
-                    <MultiChoiceContainer>
-                        {itemTypes.map((type) => (
-                            <ChoiceButton
-                                key={type}
-                                onPress={() => handleSelectItemType(type)}
-                                style={{
-                                    backgroundColor: itemType === type ? colors.brand : colors.secondary,
-                                }}
-                            >
-                                <ChoiceButtonText>{type}</ChoiceButtonText>
-                            </ChoiceButton>
+                    <QuestionLabel>Item Type *</QuestionLabel>
+                    <Picker
+                        selectedValue={itemType}
+                        onValueChange={(itemValue) => setItemType(itemValue)}
+                        style={{ backgroundColor: colors.secondary, marginBottom: 10 }}
+                    >
+                        <Picker.Item label="Select an item type" value={null} />
+                        {itemTypes.map((type, index) => (
+                            <Picker.Item key={index} label={type} value={type} />
                         ))}
+                    </Picker>
+
+                    <QuestionLabel>Date Item was Lost *</QuestionLabel>
+                    <StyledButton onPress={() => setShowDatePicker(true)}>
+                        <ButtonText>Select Date</ButtonText>
+                    </StyledButton>
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={dateLost}
+                            mode="date"
+                            display="default"
+                            onChange={(event, selectedDate) => {
+                                setShowDatePicker(false);
+                                if (selectedDate && selectedDate <= new Date()) {
+                                    setDateLost(selectedDate);
+                                } else if (selectedDate > new Date()) {
+                                    alert("Date cannot be in the future.");
+                                }
+                            }}
+                        />
+                    )}
+                    <QuestionLabel>Date Selected: {dateLost.toDateString()}</QuestionLabel>
+
+                    <QuestionLabel>Location Known? *</QuestionLabel>
+                    <MultiChoiceContainer>
+                        <ChoiceButton
+                            onPress={() => setLocationKnown(true)}
+                            style={{ backgroundColor: locationKnown === true ? colors.brand : colors.secondary }}
+                        >
+                            <ChoiceButtonText>Yes</ChoiceButtonText>
+                        </ChoiceButton>
+                        <ChoiceButton
+                            onPress={() => setLocationKnown(false)}
+                            style={{ backgroundColor: locationKnown === false ? colors.brand : colors.secondary }}
+                        >
+                            <ChoiceButtonText>No</ChoiceButtonText>
+                        </ChoiceButton>
                     </MultiChoiceContainer>
 
-                    <QuestionLabel>Possible Locations (up to 4)</QuestionLabel>
-                    {locations.map((location, index) => (
+                    {locationKnown === true && (
                         <StyledTextInput
-                            key={index}
-                            placeholder={`Location ${index + 1}`}
-                            value={location}
-                            onChangeText={(text) => handleLocationChange(index, text)}
+                            placeholder="Enter known location"
+                            value={knownLocation}
+                            onChangeText={setKnownLocation}
                         />
-                    ))}
+                    )}
 
-                    <QuestionLabel>Description of Distinguishing Features</QuestionLabel>
+                    {locationKnown === false && (
+                        <>
+                            <QuestionLabel>Possible Locations (up to 3) *</QuestionLabel>
+                            {locations.map((location, index) => (
+                                <StyledTextInput
+                                    key={index}
+                                    placeholder={`Location ${index + 1}`}
+                                    value={location}
+                                    onChangeText={(text) => handleLocationChange(index, text)}
+                                />
+                            ))}
+                        </>
+                    )}
+
+                    <QuestionLabel>Item Name *</QuestionLabel>
                     <StyledTextInput
-                        placeholder="E.g., color, size, unique markings"
+                        placeholder="E.g., phone, jacket, keys, ID"
                         value={distinguishingFeatures}
                         onChangeText={setDistinguishingFeatures}
                     />
 
                     <QuestionLabel>Long Description (Optional)</QuestionLabel>
                     <StyledTextArea
-                        placeholder="Provide additional details if necessary"
+                        placeholder="E.g., color, size, unique markings"
                         value={longDescription}
                         onChangeText={setLongDescription}
                         multiline={true}
@@ -262,4 +326,4 @@ const ReportFoundItem = ({ navigation }) => {
     );
 };
 
-export default ReportFoundItem;
+export default ReportLostItem;

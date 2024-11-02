@@ -40,7 +40,7 @@ const Welcome = ({navigation, route}) => {
                     <SubTitle>Hi, {name || 'student'}</SubTitle>
                     <SubTitle>{email || ''}</SubTitle>
                     <StyledFormArea>
-                        <Avatar resizeMode="contain" source={require('../assets/img/logo.jpeg')} />
+                        <Avatar resizeMode="contain" source={require('../assets/img/lobo_locate.png')} />
                         
                         <PlusIconContainer onPress={toggleReportButtons}>
                             <FontAwesome name="plus" size={24} color="#fff" />
