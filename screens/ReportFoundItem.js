@@ -5,6 +5,8 @@ import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { Picker } from '@react-native-picker/picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 
 import {
     StyledContainer,
@@ -161,14 +163,16 @@ const ReportLostItem = ({ navigation }) => {
                 }
 
                 // Automatically set item type if a relevant label is detected
+                let matchedtype = "Miscellaneous";
                 if (labels.length > 0) {
                     for (const [type, items] of Object.entries(itemCategoryMapping)) {
                         if (labels.some(label => items.map(item => item.toLowerCase()).includes(label.description.toLowerCase()))) {
-                            setItemType(type);
+                            matchedtype = type;
                             break;
                         }
                     }
                 }
+                setItemType(matchedtype);
     
                 const relevantLabels = labels.filter(label =>
                     mainObjectName ? label.description.toLowerCase().includes(mainObjectName) : true
