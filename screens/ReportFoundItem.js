@@ -6,6 +6,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 
 import {
@@ -35,6 +37,7 @@ const ReportLostItem = ({ navigation }) => {
     const [distinguishingFeatures, setDistinguishingFeatures] = useState("");
     const [longDescription, setLongDescription] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
+    const [userId, setUserId] = useState(null);
 
     const itemTypes = ["Electronics", "Clothing", "Accessories", "Personal Items", "Household Items", "Sports and Outdoor Gear", "Pet Items", "Miscellaneous"];
 
@@ -66,6 +69,23 @@ const ReportLostItem = ({ navigation }) => {
         };
 
         checkPermissions();
+    }, []);
+
+     // Retrieve user data on component load
+     useEffect(() => {
+        const loadUserData = async () => {
+            try {
+                const storedUser = await AsyncStorage.getItem('userData');
+                if (storedUser) {
+                    const parsedUser = JSON.parse(storedUser);
+                    setUserId(parsedUser._id); // Assuming user ID is stored in `_id`
+                }
+            } catch (error) {
+                console.log("Error retrieving user data:", error);
+            }
+        };
+
+        loadUserData();
     }, []);
 
     const openCamera = async () => {
@@ -211,17 +231,36 @@ const ReportLostItem = ({ navigation }) => {
         setLocations(updatedLocations);
     };
 
-    const handleSubmit = () => {
-        console.log({
-            image,
+    const handleSubmit = async () => {
+        if (!userId) {
+            Alert.alert("Error", "User not logged in. Please log in again.");
+            return;
+        }
+        
+        const data = {
+            userId,
             itemType,
             dateLost,
             locationKnown,
             knownLocation,
-            locations,
+            locations: locations.filter((location) => location !== ""),
             distinguishingFeatures,
             longDescription,
-        });
+        };
+
+        // Save the date to the server
+        try {
+            const response = await axios.post('https://intense-earth-59719-22401d6fbb13.herokuapp.com/item/report', data);
+            Alert.alert("Success", "Item reported successfully!", [
+                {
+                    text: "OK",
+                    onPress: () => navigation.goBack(),
+                }
+            ]);
+        } catch (error) {
+            console.error("Error reporting item:", error.response ? error.response.data : error.message);
+            Alert.alert("Error", "Could not report the item. Please try again.");
+        }
     };
     return (
         <StyledContainer>

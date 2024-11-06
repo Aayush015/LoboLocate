@@ -147,9 +147,9 @@ const ReportLostItem = ({ navigation }) => {
                         onChangeText={setDistinguishingFeatures}
                     />
 
-                    <QuestionLabel>Long Description (Optional)</QuestionLabel>
+                    <QuestionLabel>Long Description</QuestionLabel>
                     <StyledTextArea
-                        placeholder="E.g., color, size, unique markings"
+                        placeholder="E.g., color, size, unique markings separated by comma"
                         value={longDescription}
                         onChangeText={setLongDescription}
                         multiline={true}

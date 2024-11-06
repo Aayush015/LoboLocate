@@ -30,6 +30,7 @@ import {
   TextLinkContent,
 } from '../components/styles';
 import { View, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Colors required
 const { brand, darkLight, primary } = colors;
@@ -50,24 +51,30 @@ const Login = ({navigation}) => {
     const url = 'https://intense-earth-59719-22401d6fbb13.herokuapp.com/user/signin';
 
     axios
-      .post(url, credentials)
-      .then((response) => {
-        const result = response.data; 
-        const {message, status, data} = result; 
+    .post(url, credentials)
+    .then(async (response) => {
+      const result = response.data;
+      const { message, status, data } = result;
 
-        if (status !== 'SUCCESS') {
-          handleMessage(message, status);
-        } else {
-          navigation.navigate('Welcome', {...data[0]});
+      if (status !== 'SUCCESS') {
+        handleMessage(message, status);
+      } else {
+        try {
+          // Store user data in AsyncStorage
+          await AsyncStorage.setItem('userData', JSON.stringify(data[0]));
+          navigation.navigate('Welcome', { ...data[0] });
+        } catch (error) {
+          console.log("Error storing user data:", error);
         }
-        setSubmitting(false);
-      })
-      .catch(error => {
-        console.log(error.JSON());
-        setSubmitting(false);
-        handleMessage("An error occurred. Please check your internet connection and try again");
+      }
+      setSubmitting(false);
     })
-  }
+    .catch((error) => {
+      console.log(error);
+      setSubmitting(false);
+      handleMessage("An error occurred. Please check your internet connection and try again");
+    });
+  };
 
   const handleMessage = (message, type = 'FAILED') => {
     setMessage(message);
