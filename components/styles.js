@@ -1,8 +1,11 @@
 import styled from "styled-components";
-import {View, Text, Image, TextInput, TouchableOpacity} from "react-native";
 import Constants from 'expo-constants';
+import { Dimensions } from 'react-native';
 
-const statusBarHeight = Constants.statusBarHeight;
+const screenWidth = Dimensions.get('window').width;
+const imageHeight = screenWidth * 0.5; 
+
+
 // colors 
 export const colors = {
     primary: "#ffffff",
@@ -32,8 +35,8 @@ export const InnerContainer = styled.View`
 
 export const WelcomeContainer = styled(InnerContainer)`
     padding: 25px;
-    padding-top: 10px;
-    justify-content: center;
+    padding-top: 80px;
+    justify-content: top;
 `;
 
 export const PageLogo = styled.Image`
@@ -53,8 +56,12 @@ export const Avatar = styled.Image`
 `;
 
 export const WelcomeImage = styled.Image`
-    height: 30%;
-    min-width: 100%;
+    width: ${screenWidth}px;
+    height: ${imageHeight}px;
+    position: relative;
+    top: 0;
+    left: 0;
+    resize-mode: cover;
 `;
 
 export const PlusIconContainer = styled.TouchableOpacity`
@@ -130,6 +137,31 @@ export const RightIcon = styled.TouchableOpacity`
     top: 38px;
     position: absolute;
     z-index: 1;
+`;
+
+// Menu option in Welcome.js header
+// Menu options container styling (black background with rounded corners)
+export const MenuOptionsContainer = {
+    optionsContainer: {
+        backgroundColor: 'black',
+        padding: 20,
+        borderRadius: 20,
+    },
+};
+
+// Menu option text styling (white text color)
+export const MenuOptionText = styled.Text`
+    color: white;
+    font-size: 18px;
+`;
+
+// Positioned container for menu button
+export const MenuPlusContainer = styled.View`
+    flex-direction: row;
+    justify-content: flex-end;
+    width: 100%;
+    margin-top: 10px; 
+    padding-right: 80px;
 `;
 
 export const StyledButton = styled.TouchableOpacity`
