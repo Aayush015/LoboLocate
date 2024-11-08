@@ -269,10 +269,10 @@ const ReportLostItem = ({ navigation }) => {
             <ScrollView>
                 <FormContainer>
                     <StyledButton onPress={openCamera}>
-                        <ButtonText>Take Picture of Lost Item</ButtonText>
+                        <ButtonText>Take Picture of Found Item</ButtonText>
                     </StyledButton>
                     <StyledButton onPress={pickImage}>
-                        <ButtonText>Choose Image of Lost Item</ButtonText>
+                        <ButtonText>Choose Image of Found Item</ButtonText>
                     </StyledButton>
 
                     <QuestionLabel>Item Type *</QuestionLabel>

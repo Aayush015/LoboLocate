@@ -7,6 +7,7 @@ import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { Alert, ActivityIndicator } from 'react-native';
+import axios from 'axios';
 
 import {
     StyledContainer,
@@ -21,6 +22,8 @@ import {
     ButtonText,
     colors,
 } from '../components/styles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const ReportLostItem = ({ navigation }) => {
     const [itemType, setItemType] = useState(null);
@@ -35,7 +38,8 @@ const ReportLostItem = ({ navigation }) => {
     const [hasLibraryPermission, setHasLibraryPermission] = useState(false);
     const [image, setImage] = useState(null);
     const [isGenerating, setIsGenerating] = useState(false);
-
+    const [userId, setUserId] = useState(null);
+    
     const itemTypes = [
         "Electronics",
         "Clothing",
@@ -46,6 +50,17 @@ const ReportLostItem = ({ navigation }) => {
         "Pet Items",
         "Miscellaneous",
     ];
+
+    const itemCategoryMapping = {
+        "Electronics": ["Smartphones", "Laptops", "Tablets", "Headphones", "Cameras", "Chargers", "Smartwatches", "Console"],
+        "Clothing": ["Jackets", "Shirts", "Pants", "Dresses", "Sweaters", "Hats", "Scarves", "Shoes"],
+        "Accessories": ["Bags", "Sunglasses", "Jewelry", "Belts", "Watches", "Wallets", "Accessories"],
+        "Personal Items": ["Keys", "Wallets", "Eyeglasses", "Phone cases", "Personal hygiene items", "Medication", "Diaries"],
+        "Household Items": ["Kitchen utensils", "Towels", "Bedding", "Decorative items", "Small appliances", "Books", "Candles"],
+        "Sports and Outdoor Gear": ["Bicycles", "Sports balls", "Camping gear", "Fishing equipment", "Skateboards", "Fitness gear", "Water bottles"],
+        "Pet Items": ["Collars and leashes", "Pet toys", "Food and water bowls", "Pet carriers", "Grooming supplies", "Blankets for pets"],
+        "Miscellaneous": ["Umbrellas", "Notebooks", "Toys", "Travel bags", "Art supplies", "Craft items"]
+    };
 
     useEffect(() => {
         const checkPermissions = async () => {
@@ -66,6 +81,23 @@ const ReportLostItem = ({ navigation }) => {
         checkPermissions();
     }, []);    
 
+    // Retrieve user data on component load
+    useEffect(() => {
+        const loadUserData = async () => {
+            try {
+                const storedUser = await AsyncStorage.getItem('userData');
+                if (storedUser) {
+                    const parsedUser = JSON.parse(storedUser);
+                    setUserId(parsedUser._id); // Assuming user ID is stored in `_id`
+                }
+            } catch (error) {
+                console.log("Error retrieving user data:", error);
+            }
+        };
+
+        loadUserData();
+    }, []);
+
     const handleLocationChange = (index, value) => {
         const updatedLocations = [...locations];
         updatedLocations[index] = value;
@@ -77,8 +109,14 @@ const ReportLostItem = ({ navigation }) => {
             Alert.alert("Error", "Please fill out all required fields.");
             return;
         }
+
+        if (!userId) {
+            Alert.alert("Error", "User not logged in. Please log in again.");
+            return;
+        }
     
         const data = {
+            userId,
             itemType,
             dateLost,
             locationKnown,
@@ -86,7 +124,6 @@ const ReportLostItem = ({ navigation }) => {
             locations: locations.filter(loc => loc),
             distinguishingFeatures,
             longDescription,
-            image,  
             status: "lost" 
         };
     
@@ -228,11 +265,8 @@ const ReportLostItem = ({ navigation }) => {
             <StatusBar style="dark" />
             <ScrollView>
                 <FormContainer>
-                    <StyledButton onPress={openCamera}>
-                        <ButtonText>Take Picture of Lost Item</ButtonText>
-                    </StyledButton>
                     <StyledButton onPress={pickImage}>
-                        <ButtonText>Choose Image of Lost Item</ButtonText>
+                        <ButtonText>Choose Image if available</ButtonText>
                     </StyledButton>
                     <QuestionLabel>Item Type *</QuestionLabel>
                     <Picker
