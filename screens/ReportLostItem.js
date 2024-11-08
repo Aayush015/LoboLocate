@@ -86,7 +86,8 @@ const ReportLostItem = ({ navigation }) => {
             locations: locations.filter(loc => loc),
             distinguishingFeatures,
             longDescription,
-            image,  // add image URI here for backend handling
+            image,  
+            status: "lost" 
         };
     
         try {

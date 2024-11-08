@@ -246,6 +246,7 @@ const ReportLostItem = ({ navigation }) => {
             locations: locations.filter((location) => location !== ""),
             distinguishingFeatures,
             longDescription,
+            status: "found" 
         };
 
         // Save the date to the server
