@@ -75,7 +75,7 @@ const Welcome = ({ navigation, route }) => {
                             <MenuOption onSelect={() => navigation.navigate("PotentialMatches", { userId })}>
                                 <MenuOptionText>Potential Matches</MenuOptionText>
                             </MenuOption>
-                            <MenuOption onSelect={() => navigation.navigate("UserHistory")}>
+                            <MenuOption onSelect={() => navigation.navigate("UserHistory", { userId })}>
                                 <MenuOptionText>History</MenuOptionText>
                             </MenuOption>
                             <MenuOption onSelect={() => navigation.navigate("UnclaimedItems")}>
