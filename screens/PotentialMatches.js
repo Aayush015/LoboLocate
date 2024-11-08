@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, Modal, TextInput, Button } from 'react-native';
 import axios from 'axios';
 
 const PotentialMatches = ({ route, navigation }) => {
     const { userId } = route.params || {};
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [chatModalVisible, setChatModalVisible] = useState(false);
+    const [currentChatUser, setCurrentChatUser] = useState(null);
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
         const fetchMatches = async () => {
@@ -14,11 +17,9 @@ const PotentialMatches = ({ route, navigation }) => {
                 
                 const matchesData = await Promise.all(response.data.map(async (match) => {
                     try {
-                        // URL construction for clarity
                         const foundUserId = match.foundItem.userId;
                         const userUrl = `https://intense-earth-59719-22401d6fbb13.herokuapp.com/user/${foundUserId}`;
                         
-                        // Fetching the found user's data
                         const userResponse = await axios.get(userUrl);
                         
                         if (userResponse.data.status === 'SUCCESS') {
@@ -49,8 +50,22 @@ const PotentialMatches = ({ route, navigation }) => {
     
     }, [userId]);
 
-    const handleChat = (otherUserId) => {
-        navigation.navigate('Chat', { userId, otherUserId });
+    const handleChat = (foundUserId) => {
+        setCurrentChatUser(foundUserId);
+        setChatModalVisible(true);
+    };
+
+    const sendMessage = () => {
+        if (message.trim()) {
+            // Here you would handle sending the message, e.g., via an API call or socket event
+            console.log(`Message sent to user ${currentChatUser}: ${message}`);
+            
+            // Clear the message and close the modal after sending
+            setMessage('');
+            setChatModalVisible(false);
+        } else {
+            Alert.alert("Empty Message", "Please enter a message before sending.");
+        }
     };
 
     const renderItem = ({ item }) => (
@@ -66,7 +81,7 @@ const PotentialMatches = ({ route, navigation }) => {
             <Text>Distinguishing Features: {item.foundItem.distinguishingFeatures || "N/A"}</Text>
             
             <View style={styles.chatBox}>
-                <TouchableOpacity style={styles.chatButton} onPress={() => handleChat(item.foundItemUserId)}>
+                <TouchableOpacity style={styles.chatButton} onPress={() => handleChat(item.foundItem.userId)}>
                     <Text style={styles.chatButtonText}>Chat with Finder</Text>
                 </TouchableOpacity>
             </View>
@@ -85,6 +100,28 @@ const PotentialMatches = ({ route, navigation }) => {
                     ListEmptyComponent={<Text style={styles.noMatchesText}>No potential matches found.</Text>}
                 />
             )}
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={chatModalVisible}
+                onRequestClose={() => setChatModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Message Finder</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Type your message here..."
+                            value={message}
+                            onChangeText={setMessage}
+                            multiline
+                        />
+                        <Button title="Send Message" onPress={sendMessage} />
+                        <Button title="Cancel" color="red" onPress={() => setChatModalVisible(false)} />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -140,6 +177,33 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        margin: 20,
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 15,
+    },
+    input: {
+        height: 100,
+        width: '100%',
+        borderColor: '#ddd',
+        borderWidth: 1,
+        borderRadius: 5,
+        padding: 10,
+        marginBottom: 15,
+        textAlignVertical: 'top',
     },
 });
 
