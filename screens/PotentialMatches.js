@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, Modal, TextInput, Button } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, Modal, TextInput, Button, ScrollView } from 'react-native';
 import axios from 'axios';
+import io from 'socket.io-client';
+
+const socket = io("https://intense-earth-59719-22401d6fbb13.herokuapp.com/item/chat/"); // Connect to the Socket.IO server
 
 const PotentialMatches = ({ route, navigation }) => {
     const { userId } = route.params || {};
@@ -8,7 +11,9 @@ const PotentialMatches = ({ route, navigation }) => {
     const [loading, setLoading] = useState(true);
     const [chatModalVisible, setChatModalVisible] = useState(false);
     const [currentChatUser, setCurrentChatUser] = useState(null);
+    const [currentItemId, setCurrentItemId] = useState(null);
     const [message, setMessage] = useState('');
+    const [messages, setMessages] = useState([]);
 
     useEffect(() => {
         const fetchMatches = async () => {
@@ -50,19 +55,45 @@ const PotentialMatches = ({ route, navigation }) => {
     
     }, [userId]);
 
-    const handleChat = (foundUserId) => {
+    const handleChat = (foundUserId, itemId) => {
         setCurrentChatUser(foundUserId);
+        setCurrentItemId(itemId);
         setChatModalVisible(true);
+        fetchChatHistory(itemId);
     };
+
+    const fetchChatHistory = async (itemId) => {
+        try {
+            const response = await axios.get(`https://intense-earth-59719-22401d6fbb13.herokuapp.com/item/chat/${itemId}`);
+            setMessages(response.data);
+        } catch (error) {
+            console.error("Error fetching chat history:", error);
+        }
+    };
+
+    useEffect(() => {
+        // Listen for real-time messages for the specific item chat
+        socket.on(`message:${currentItemId}`, (newMessage) => {
+            setMessages((prevMessages) => [...prevMessages, newMessage]);
+        });
+
+        return () => {
+            socket.off(`message:${currentItemId}`);
+        };
+    }, [currentItemId]);
 
     const sendMessage = () => {
         if (message.trim()) {
-            // Here you would handle sending the message, e.g., via an API call or socket event
-            console.log(`Message sent to user ${currentChatUser}: ${message}`);
-            
-            // Clear the message and close the modal after sending
-            setMessage('');
-            setChatModalVisible(false);
+            const newMessage = {
+                senderId: userId,
+                receiverId: currentChatUser,
+                itemId: currentItemId,
+                message,
+            };
+
+            // Emit the message via Socket.IO
+            socket.emit('sendMessage', newMessage);
+            setMessage(''); // Clear input field
         } else {
             Alert.alert("Empty Message", "Please enter a message before sending.");
         }
@@ -81,7 +112,7 @@ const PotentialMatches = ({ route, navigation }) => {
             <Text>Distinguishing Features: {item.foundItem.distinguishingFeatures || "N/A"}</Text>
             
             <View style={styles.chatBox}>
-                <TouchableOpacity style={styles.chatButton} onPress={() => handleChat(item.foundItem.userId)}>
+                <TouchableOpacity style={styles.chatButton} onPress={() => handleChat(item.foundItem.userId, item.foundItem._id)}>
                     <Text style={styles.chatButtonText}>Chat with Finder</Text>
                 </TouchableOpacity>
             </View>
@@ -109,7 +140,15 @@ const PotentialMatches = ({ route, navigation }) => {
             >
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Message Finder</Text>
+                        <Text style={styles.modalTitle}>Chat with Finder</Text>
+                        <ScrollView style={styles.messageList}>
+                            {messages.map((msg, index) => (
+                                <View key={index} style={styles.messageContainer}>
+                                    <Text style={styles.messageAuthor}>{msg.senderId.name}:</Text>
+                                    <Text style={styles.messageText}>{msg.message}</Text>
+                                </View>
+                            ))}
+                        </ScrollView>
                         <TextInput
                             style={styles.input}
                             placeholder="Type your message here..."
@@ -118,7 +157,7 @@ const PotentialMatches = ({ route, navigation }) => {
                             multiline
                         />
                         <Button title="Send Message" onPress={sendMessage} />
-                        <Button title="Cancel" color="red" onPress={() => setChatModalVisible(false)} />
+                        <Button title="Close" color="red" onPress={() => setChatModalVisible(false)} />
                     </View>
                 </View>
             </Modal>
@@ -196,7 +235,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     input: {
-        height: 100,
+        height: 50,
         width: '100%',
         borderColor: '#ddd',
         borderWidth: 1,
@@ -204,6 +243,20 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 15,
         textAlignVertical: 'top',
+    },
+    messageList: {
+        height: 200,
+        width: '100%',
+        marginBottom: 15,
+    },
+    messageContainer: {
+        marginBottom: 8,
+    },
+    messageAuthor: {
+        fontWeight: 'bold',
+    },
+    messageText: {
+        fontSize: 16,
     },
 });
 
