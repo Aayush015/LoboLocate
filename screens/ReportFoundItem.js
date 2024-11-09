@@ -287,7 +287,7 @@ const ReportLostItem = ({ navigation }) => {
                         ))}
                     </Picker>
 
-                    <QuestionLabel>Date Item was Lost *</QuestionLabel>
+                    <QuestionLabel>Date Item was Found *</QuestionLabel>
                     <StyledButton onPress={() => setShowDatePicker(true)}>
                         <ButtonText>Select Date</ButtonText>
                     </StyledButton>
