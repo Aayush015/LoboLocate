@@ -11,6 +11,12 @@ Click the image above or [here](https://youtu.be/zAapFw2X3GY) to watch the video
 
 ---
 
+## Architecture Diagram
+
+![LoboLocate Architecture Diagram](./Architecture%20Diagram.png)
+
+---
+
 ## Table of Contents
 
 1. [Features](#features)
